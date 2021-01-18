@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1441</width>
+    <height>555</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QLineEdit" name="edit_database_path"/>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_load_data">
+      <property name="text">
+       <string>Lade Datenbank</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QPushButton" name="button_add">
+        <property name="text">
+         <string>Spalte Hinzufügen</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="button_save">
+        <property name="text">
+         <string>Kochbuch Speichern</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QTableWidget" name="content_table">
+      <column>
+       <property name="text">
+        <string>Name</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Fisch</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Nudeln</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Vortag</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>SE</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>WE</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>WE Wichtung</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Wichtung</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string/>
+       </property>
+      </column>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1441</width>
+     <height>21</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
