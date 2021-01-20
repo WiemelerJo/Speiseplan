@@ -1,7 +1,8 @@
 from Kochbuch import *
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QLineEdit, QDoubleSpinBox, QPushButton, QMessageBox
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QLineEdit, QDoubleSpinBox, QPushButton, QMessageBox, QHeaderView
 from PyQt5.QtCore import QThread, pyqtSignal, QSignalBlocker
+from PyQt5.QtCore import Qt
 
 from sqlitedict import SqliteDict
 
@@ -54,23 +55,23 @@ class MyForm(QMainWindow):
         # get items from content_table, update Kochbuch and commit it to database
         self.Kochbuch.clear()
         table = self.ui.content_table
+        header_items = [table.model().headerData(i, Qt.Horizontal) for i in range(table.model().columnCount())]
+
         for row_index in range(self.ui.content_table.rowCount()): # Every row is one dish/gericht
-            name = table.cellWidget(row_index,0).text()
-            fisch = table.cellWidget(row_index,1).text()
-            nudel = table.cellWidget(row_index,2).text()
-            vortag = table.cellWidget(row_index,3).text()
-            se = table.cellWidget(row_index,4).text()
-            we = table.cellWidget(row_index,5).text()
-            we_wichtung = table.cellWidget(row_index,6).text()
-            wichtung = table.cellWidget(row_index,7).text()
-            self.add_gericht(name, fisch, nudel, vortag, se, we, we_wichtung, wichtung)
+            temp_dict = dict()
+            for col_index, item in enumerate(header_items):
+                temp_dict[item] = table.cellWidget(row_index,col_index).text()
+            self.add_gericht(temp_dict)
 
     def add_entry(self):
+        # Add empty entry to table
         row_cnt = self.ui.content_table.rowCount()
+        col_cnt = self.ui.content_table.columnCount()
         self.ui.content_table.insertRow(row_cnt)
-        for col_index in range(8 + 1):
+
+        for col_index in range(col_cnt):
             self.ui.content_table.setCellWidget(row_cnt, col_index, QLineEdit())
-            if col_index == 8:  # Delete Option
+            if col_index == col_cnt - 1:  # Delete Option
                 self.ui.content_table.setCellWidget(row_cnt, col_index, QPushButton('Delete'))
                 self.ui.content_table.cellWidget(row_cnt, col_index).clicked.connect(self.remove_entry)
 
@@ -85,26 +86,40 @@ class MyForm(QMainWindow):
         #self.del_gericht(name)
 
     def create_content_table(self):
-        self.ui.content_table.setRowCount(len(self.Kochbuch))
+        # Creates the Widgets inside the Table
+        table = self.ui.content_table
+        table.setRowCount(len(self.Kochbuch))
+        header_items = [table.model().headerData(i, Qt.Horizontal) for i in range(table.model().columnCount())]
         row_label = []
+        col_cnt = table.model().columnCount()
+
         for row_index, val in enumerate(self.Kochbuch.items()):
             #row_label.append(str(row_index + 1) + ' ' + str(val[0]))
-            for col_index in range(8 + 1):
-                self.ui.content_table.setCellWidget(row_index,col_index,QLineEdit())
-                if col_index == 8: # Delete Option
-                    self.ui.content_table.setCellWidget(row_index, col_index, QPushButton('Delete'))
-                    self.ui.content_table.cellWidget(row_index,col_index).clicked.connect(self.remove_entry)
+            for col_index in range(col_cnt):
+                table.setCellWidget(row_index,col_index,QLineEdit())
+                if col_index == col_cnt - 1: # Add Delete Button
+                    table.setCellWidget(row_index, col_index, QPushButton('Delete'))
+                    table.cellWidget(row_index,col_index).clicked.connect(self.remove_entry)
         #self.ui.content_table.setVerticalHeaderLabels(row_label)
-        self.set_text_to_table()
+        self.set_text_to_table(header_items)
 
-    def set_text_to_table(self):
+    def set_text_to_table(self,header_items):
+        table = self.ui.content_table
         for row_index, val in enumerate(self.Kochbuch.items()):
-            self.ui.content_table.cellWidget(row_index, 0).setText(val[0]) # Name column/ set Name
+            table.cellWidget(row_index, 0).setText(val[0]) # Name column/ set Name
             #print(val[1].values())
-            for col_index, item in enumerate(val[1].values()):
-                self.ui.content_table.cellWidget(row_index,col_index + 1).setText(str(item))
+            for col_index, item in enumerate(header_items[1:]):
+                try:
+                    table.cellWidget(row_index, col_index + 1).setText(val[1][item])
+                except KeyError:
+                    if item == None: # Used, that the delete button text will not be overwritten
+                        pass
+                    else:
+                        # Set unfilled category empty
+                        table.cellWidget(row_index, col_index + 1).setText('')
 
-    def add_gericht(self, name: str, Fisch: bool, Nudeln: bool, Vortag: bool, SE: bool, WE: bool, WE_Wichtung: float, Wichtung: float):
+    def add_gericht(self, entries:dict):
+        # Olf func args: name: str, Fisch: bool, Nudeln: bool, Vortag: bool, SE: bool, WE: bool, WE_Wichtung: float, Wichtung: float
         # Gerichte werden gespeichert in dict()
         # Jedes Gericht wird dabei Kategorisiert in:
         #       - Fisch: Bool
@@ -126,15 +141,16 @@ class MyForm(QMainWindow):
 
         # Gerichte['Tortillas'] = Tortillas
         # -------------------------------------------------------------------------------
-        name_dict = dict()
+        '''name_dict = dict()
         name_dict['Fisch'] = Fisch
         name_dict['Nudeln'] = Nudeln
         name_dict['Vortag'] = Vortag
         name_dict['SE'] = SE
         name_dict['WE'] = WE
         name_dict['WE_Wichtung'] = WE_Wichtung
-        name_dict['Wichtung'] = Wichtung
-        self.Kochbuch[name] = name_dict
+        name_dict['Wichtung'] = Wichtung'''
+        name = entries['Name']
+        self.Kochbuch[name] = entries
 
     def del_gericht(self,name):
         self.Kochbuch.pop(name)

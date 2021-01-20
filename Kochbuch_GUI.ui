@@ -62,6 +62,11 @@
       </column>
       <column>
        <property name="text">
+        <string>Kartoffeln</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
         <string>Vortag</string>
        </property>
       </column>
@@ -77,7 +82,12 @@
       </column>
       <column>
        <property name="text">
-        <string>WE Wichtung</string>
+        <string>Saison</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>WE_Wichtung</string>
        </property>
       </column>
       <column>
