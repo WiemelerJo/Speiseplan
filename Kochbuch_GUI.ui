@@ -102,6 +102,13 @@
       </column>
      </widget>
     </item>
+    <item>
+     <widget class="QPushButton" name="button_plan">
+      <property name="text">
+       <string>Speiseplan</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">

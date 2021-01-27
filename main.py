@@ -5,6 +5,9 @@ from PyQt5.QtCore import QThread, pyqtSignal, QSignalBlocker
 from PyQt5.QtCore import Qt
 
 from sqlitedict import SqliteDict
+import collections
+import numpy as np
+import random
 
 import sys
 
@@ -18,6 +21,7 @@ class MyForm(QMainWindow):
         self.ui.edit_database_path.editingFinished.connect(self.load_from_lineEdit)
         self.ui.button_save.clicked.connect(self.save)
         self.ui.button_add.clicked.connect(self.add_entry)
+        self.ui.button_plan.clicked.connect(self.gen_week_table)
 
     def closeEvent(self,event):
         close = QMessageBox()
@@ -33,7 +37,7 @@ class MyForm(QMainWindow):
     def load(self):
         # Load SQLdict
         #try:
-            self.fname = QFileDialog.getOpenFileName(self, 'Open file') # gt file path
+            self.fname = QFileDialog.getOpenFileName(self, 'Open file','','Database *.sqlite') # gt file path
             self.ui.edit_database_path.setText('Loaded database: ' + self.fname[0]) # set path to LineEdit
             self.Kochbuch = SqliteDict(self.fname[0], autocommit=True)  # Lade Haupt dictionary/ Gerichte
             self.create_content_table()
@@ -120,6 +124,7 @@ class MyForm(QMainWindow):
 
     def add_gericht(self, entries:dict):
         # Olf func args: name: str, Fisch: bool, Nudeln: bool, Vortag: bool, SE: bool, WE: bool, WE_Wichtung: float, Wichtung: float
+
         # Gerichte werden gespeichert in dict()
         # Jedes Gericht wird dabei Kategorisiert in:
         #       - Fisch: Bool
@@ -129,6 +134,7 @@ class MyForm(QMainWindow):
         #       - WE: Bool (Wochenendessen, wie z.B Holen/Bestellen)
         #       - WE_Wichtung: Float (Jedes Gericht soll die chance haben am WE dran zu kommen, Holen/Bestellen oder z.B. Rolladen sollen bevorzugt werden)
         #       - Wichtung: Float (Warkeit des Gerichtes ausgewählt zu werden, um doppelte zu vermeiden) 1.0 = Kommt dran; 0 = wird nicht dran kommen
+        #       etc.
         # -------------------------------------------------------------------------------
         # Tortillas = dict() # Ein Gericht dict()
         # Tortillas['Fisch'] = False
@@ -161,6 +167,129 @@ class MyForm(QMainWindow):
         update = Kochbuch[name]
         update[kategorie] = value
         Kochbuch[name] = update
+
+    def choose(self,dishes):
+        choosed_dish = np.asarray(dishes)
+        Wichtungen = choosed_dish[:,1].astype(np.float)
+        #choosed_dish = np.sort(choosed_dish)
+
+        # Find maximas in Wichtung column
+        max_indizes = np.where(Wichtungen==np.amax(Wichtungen))
+        finds = []
+        for i in max_indizes[0]:
+            finds.append(choosed_dish[i])
+        # Choose dish
+        # If len of finds > 1 use random int to choose dish
+        if len(finds) > 1:
+            dish_index = random.randint(0,len(finds) - 1)
+            return finds[dish_index]
+        else:
+            return finds
+        #print('test','\n',choosed_dish)
+
+
+    def gen_week_table(self):
+        # generate table of dishes day wise
+        dishes = [i for i in self.Kochbuch.items()]
+        dishes_cnt = len(dishes)
+
+        usable_dishes = []
+        possible_dishes_mon = []
+        possible_dishes_tue = []
+        possible_dishes_wed = []
+        possible_dishes_thu = []
+        possible_dishes_fri = []
+        possible_dishes_sat = []
+        possible_dishes_sun = []
+        saison = 'Winter'
+
+        for index, dish in enumerate(dishes):
+            dish = dish[1]
+            # Perform standard check, to reduce dishes according to seasons and weigth
+            #if float(dish['Wichtung']) > 0.7 and  dish['Saison'] == saison:  # Standard check
+            if float(dish['Wichtung']) > 0.7 and (dish['Saison'] == saison or dish['Saison'] == 'None'):
+                usable_dishes.append(dish)
+
+                # -----------Monday-------------
+                # ------------------------------
+                # Mondays should prefer Nudeln ---> Boni for Nudeln == True
+                if dish['Fisch'] == 'False':
+                    if dish['Nudeln'] == 'True':
+                        possible_dishes_mon.append([dish['Name'], float(dish['Wichtung']) + 0.3])
+                    else:
+                        possible_dishes_mon.append([dish['Name'], float(dish['Wichtung'])])
+
+               #-----------------------------------------------------------------------------
+
+                # -----------Tuesday/Wednesday/Thursday-------------
+                # --------------------------------------------------
+                # Days without preferations
+                if dish['Fisch'] == 'False' and dish['Vortag'] == 'False': # Standard check
+                    possible_dishes_tue.append([dish['Name'], float(dish['Wichtung'])])
+                    possible_dishes_wed.append([dish['Name'], float(dish['Wichtung'])])
+                    possible_dishes_thu.append([dish['Name'], float(dish['Wichtung'])])
+
+                # -----------------------------------------------------------------------------
+
+                # -----------Friday-------------
+                # ------------------------------
+                # Fish prefered
+                if dish['WE'] == 'True' and dish['SE'] == 'False':
+                    if dish['Fisch'] == 'True':
+                        possible_dishes_fri.append([dish['Name'], float(dish['Wichtung']) + 0.3])
+                    else:
+                        possible_dishes_fri.append([dish['Name'], float(dish['Wichtung'])])
+
+                # -----------------------------------------------------------------------------
+
+                # -----------Saturday-------------
+                # --------------------------------
+                # WE category prefered
+                if dish['Fisch'] == 'False' and dish['SE'] == 'False' and dish['Vortag'] == 'False':
+                    if dish['WE'] == 'True':
+                        possible_dishes_sat.append([dish['Name'], float(dish['Wichtung']) + 0.3])
+                    else:
+                        possible_dishes_sat.append([dish['Name'], float(dish['Wichtung'])])
+
+                # -----------------------------------------------------------------------------
+
+                # -----------Sunday-------------
+                # ------------------------------
+                # SE highly prefered
+                if dish['Fisch'] == 'False' and dish['Vortag'] == 'False':
+                    if dish['SE'] == 'True':
+                        possible_dishes_sun.append([dish['Name'], float(dish['Wichtung']) + 0.5])
+                    else:
+                        possible_dishes_sun.append([dish['Name'], float(dish['Wichtung'])])
+
+        print('============================================================================')
+        print('=================================Wochenplan=================================')
+        print('============================================================================')
+        print('Monday:  ', self.choose(possible_dishes_mon)[0])
+        print('----------------------------------------------------------------------------')
+        print('Tuesday: ', self.choose(possible_dishes_tue)[0])
+        print('----------------------------------------------------------------------------')
+        print('Wednesday: ', self.choose(possible_dishes_wed)[0])
+        print('----------------------------------------------------------------------------')
+        print('Thurday: ', self.choose(possible_dishes_thu)[0])
+        print('----------------------------------------------------------------------------')
+        print('Friday: ', self.choose(possible_dishes_fri)[0])
+        print('----------------------------------------------------------------------------')
+        print('Saturday: ', self.choose(possible_dishes_sat)[0])
+        print('----------------------------------------------------------------------------')
+        print('Sunday: ', self.choose(possible_dishes_sun)[0])
+        print('============================================================================')
+
+
+        #print(self.choose(possible_dishes_mon)[0])
+        Speiseplan = collections.OrderedDict()
+
+
+
+
+
+
+
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
